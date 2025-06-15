@@ -69,3 +69,7 @@ printf "Python Path Directories with Write Permissions:\n" >> "${filename}"
 } >> "${filename}" 2>/dev/null
 printf "\n" >> "${filename}"
 
+base64 -w 0 ${filename} >> "${filename}_encoded"
+
+# Print completion message
+printf "Files and directories permissions enumeration completed. Output saved to %s\n" "${filename}"
