@@ -1,4 +1,7 @@
 #!/bin/bash
+# This script enumerates files and directories with specific permissions on a Linux system.
+# It collects information about write permissions, SUID/SGID files, binary capabilities,
+# process capabilities, and Python path directories with write permissions.
 
 user="$(whoami)"
 host="$(hostname)"
