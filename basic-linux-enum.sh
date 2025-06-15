@@ -7,7 +7,7 @@
 user="$(whoami)"
 host="$(hostname)"
 date="$(date -I)"
-filename="${user}_${host}_${date}"
+filename="host_enum_${user}_${host}_${date}"
 
 # Displays current username.
 printf "User: %s\n\n" "$(whoami)" >> "${filename}"
