@@ -72,6 +72,30 @@ printf "Python Path Directories with Write Permissions:\n" >> "${filename}"
 } >> "${filename}" 2>/dev/null
 printf "\n" >> "${filename}"
 
+
+# Print symbolic links owned by root in sensitive directories
+printf "Symbolic Links Owned by Root in Sensitive Directories:\n" >> "${filename}"
+printf "Link;Target;Owner;Sensible\n" >> "${filename}"
+{
+    find / -xtype l 2>/dev/null | while read -r link; do
+        target=$(readlink "$link")
+        owner=$(stat -c '%U' "$link" 2>/dev/null)
+        if [[ "$owner" == "root" ]]; then
+            case "$link" in
+                /etc/*|/usr/*|/var/*|/opt/*|/lib/*)
+                    flag="YES"
+                    ;;
+                *)
+                    flag="NO"
+                    ;;
+            esac
+            printf "$link;$target;$owner;$flag\n" >> "${filename}"
+        fi
+    done
+} 2>/dev/null
+printf "\n" >> "${filename}"
+
+
 base64 -w 0 ${filename} >> "${filename}_encoded"
 
 # Print completion message
