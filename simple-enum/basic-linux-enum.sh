@@ -7,7 +7,8 @@
 user="$(whoami)"
 host="$(hostname)"
 date="$(date -I)"
-filename="host_enum_${user}_${host}_${date}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+filename="${script_dir}/../results/host_enum_${user}_${host}_${date}"
 
 # Displays current username.
 printf "User: %s\n\n" "$(whoami)" >> "${filename}"
@@ -34,7 +35,31 @@ printf "Working Directory: %s\n\n" "$(pwd)" >> "${filename}"
 
 # Print Active Terminals
 printf "Active Terminals:\n" >> "${filename}"
-who >> "${filename}"
+who -u >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Print Active Users
+printf "Active Users:\n" >> "${filename}"
+w >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Print Last Logins
+printf "Last Logins:\n" >> "${filename}"
+last -a | head -n 20 >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Print Users Last Logins
+printf "Users Last Logins:\n" >> "${filename}"
+lastlog | head -n 20 >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Print Sudoers
+printf "Sudoers:\n" >> "${filename}"
+if command -v sudo &> /dev/null; then
+    sudo -n -l 2>/dev/null || echo "sudo -l requires password" >> "${filename}" 
+else
+    printf "sudo command not found.\n" >> "${filename}"
+fi
 printf "\n" >> "${filename}"
 
 # Print Available Shells
@@ -49,7 +74,13 @@ printf "\n" >> "${filename}"
 
 # Print Listening TCP Processes
 printf "Listening TCP Processes:\n" >> "${filename}"
-netstat -nlpt >> "${filename}"
+if command -v netstat &> /dev/null; then
+    netstat -nlpt >> "${filename}"
+elif command -v ss &> /dev/null; then
+    ss -lntp >> "${filename}"
+else
+    echo "Processes Listening Program Not Found." >> "${filename}"
+fi
 printf "\n" >> "${filename}"
 
 # Return Boot Enabled Services
@@ -65,6 +96,16 @@ printf "\n" >> "${filename}"
 # Return /etc/passwd
 printf "Users:\n" >> "${filename}"
 cat /etc/passwd >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Return /etc/group
+printf "Groups:\n" >> "${filename}"
+cat /etc/group >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Return /etc/shadow
+printf "Shadow File:\n" >> "${filename}"
+cat /etc/shadow >> "${filename}"
 printf "\n" >> "${filename}"
 
 # Return Block Devices

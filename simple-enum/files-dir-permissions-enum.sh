@@ -6,7 +6,8 @@
 user="$(whoami)"
 host="$(hostname)"
 date="$(date -I)"
-filename="files_and_dir_permissions_enum_${user}_${host}_${date}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+filename="${script_dir}/../results/files_and_dir_permissions_enum_${user}_${host}_${date}"
 
 # Print Write Permission Directories
 printf "Write Permission Directories:\n" >> "${filename}"
@@ -15,14 +16,12 @@ find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /snap -
     -type d -perm -o+w -exec ls -dla {} \; 2>/dev/null >> "${filename}"
 printf "\n" >> "${filename}"
 
-
 # Print Write Permission Files
 printf "Write Permission Files:\n" >> "${filename}"
 find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /snap -o \
     -path /var/lib/docker -o -path /var/run -o -path /var/cache \) -prune -o \
     -type f -perm -o+w -exec ls -la {} \; 2>/dev/null >> "${filename}"
 printf "\n" >> "${filename}"
-
 
 # Print SUID Permission Files
 printf "SUID Permission Files:\n" >> "${filename}"
@@ -62,7 +61,6 @@ for pid in $(ls /proc/ | grep -E '^[0-9]+$'); do
 done >> "${filename}"
 printf "\n" >> "${filename}"
 
-
 # Print Python Path Directories with Write Permissions
 printf "Python Path Directories with Write Permissions:\n" >> "${filename}"
 { 
@@ -71,7 +69,6 @@ printf "Python Path Directories with Write Permissions:\n" >> "${filename}"
     done | grep -E 'd.........w.' 
 } >> "${filename}" 2>/dev/null
 printf "\n" >> "${filename}"
-
 
 # Print symbolic links owned by root in sensitive directories
 printf "Symbolic Links Owned by Root in Sensitive Directories:\n" >> "${filename}"

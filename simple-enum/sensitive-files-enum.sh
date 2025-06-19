@@ -1,11 +1,16 @@
 #!/bin/bash
+# This script enumerates sensitive files and directories on a Linux system.
+# It collects information about files with sensitive words in their names, history files with sensitive commands,
+# files with sensitive extensions, files with sensitive words in their content, hidden files and directories,
+# and sensitive logs. The results are saved to a file and encoded in base64.
 
 user="$(whoami)"
 host="$(hostname)"
 date="$(date -I)"
-filename="sensitive_files_enum_${user}_${host}_${date}.txt"
-words_wordlist="sensitive-words-wordlist.txt"
-extensions_wordlist="sensitive-extensions-wordlist.txt"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+filename="${script_dir}/../results/sensitive_files_enum_${user}_${host}_${date}"
+words_wordlist="../wordlists/sensitive-words-wordlist.txt"
+extensions_wordlist="../wordlists/sensitive-extensions-wordlist.txt"
 
 # Files with sensitive words in their names
 printf "Files with Sensitive Words in Their Names:\n" >> "${filename}"
