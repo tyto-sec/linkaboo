@@ -88,6 +88,14 @@ printf "Boot Enabled Services:\n" >> "${filename}"
 systemctl list-unit-files --state=enabled --no-pager | grep enabled >> "${filename}"
 printf "\n" >> "${filename}"
 
+# Print Tmux Sessions
+printf "Tmux Sessions:\n" >> "${filename}"
+ps aux | grep tmux >> "${filename}"
+if [ $? -ne 0 ]; then
+    printf "No tmux sessions found.\n" >> "${filename}"
+fi
+printf "\n" >> "${filename}"
+
 # Print environment variables
 printf "Environment Variables:\n" >> "${filename}"
 env >> "${filename}"
