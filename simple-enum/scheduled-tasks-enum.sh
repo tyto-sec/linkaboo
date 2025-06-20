@@ -1,4 +1,7 @@
 #!/bin/bash
+# This script enumerates scheduled tasks on a Linux system, including cron jobs and systemd timers
+# It collects information about cron jobs, systemd timers, and services, and saves the output
+# to a results file in the specified directory.
 
 user="$(whoami)"
 host="$(hostname)"
@@ -40,6 +43,11 @@ for user in $(cut -f1 -d: /etc/passwd); do
         printf "\n" >> "${filename}"
     fi
 done
+printf "\n" >> "${filename}"
+
+# Print Rsync Backup Jobs
+printf "Print Rsync Backup Jobs:\n" >> "${filename}"
+grep -r rsync /etc/cron* 2>/dev/null >> "${filename}"
 printf "\n" >> "${filename}"
 
 # List systemd timers
