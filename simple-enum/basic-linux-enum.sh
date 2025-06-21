@@ -10,33 +10,13 @@ date="$(date -I)"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 filename="${script_dir}/../results/host_enum_${user}_${host}_${date}"
 
+### Users
+
 # Displays current username.
 printf "User: %s\n\n" "$(whoami)" >> "${filename}"
 
 # Returns user's identity
 printf "Id: %s\n\n" "$(id)" >> "${filename}"
-
-# Prints the name of current host system.
-printf "Host: %s\n\n" "$(hostname)" >> "${filename}"
-
-# Prints DNS domain name
-printf "DNS Domain Name: %s\n\n" "$(hostname -d)" >> "${filename}"
-
-# Prints information about the operating system name and system hardware.
-printf "OS: %s\n\n" "$(uname -a)" >> "${filename}"
-
-# Prints Linux Distro and Release
-printf "Distro and Release:\n" >> "${filename}"
-cat /etc/os-release >> "${filename}"
-printf "\n" >> "${filename}"
-
-# Returns working directory name
-printf "Working Directory: %s\n\n" "$(pwd)" >> "${filename}"
-
-# Print Active Terminals
-printf "Active Terminals:\n" >> "${filename}"
-who -u >> "${filename}"
-printf "\n" >> "${filename}"
 
 # Print Active Users
 printf "Active Users:\n" >> "${filename}"
@@ -62,6 +42,46 @@ else
 fi
 printf "\n" >> "${filename}"
 
+# Return /etc/passwd
+printf "Users:\n" >> "${filename}"
+cat /etc/passwd >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Return /etc/group
+printf "Groups:\n" >> "${filename}"
+cat /etc/group >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Return /etc/shadow
+printf "Shadow File:\n" >> "${filename}"
+cat /etc/shadow >> "${filename}"
+printf "\n" >> "${filename}"
+
+
+### Host
+
+# Prints the name of current host system.
+printf "Host: %s\n\n" "$(hostname)" >> "${filename}"
+
+# Prints DNS domain name
+printf "DNS Domain Name: %s\n\n" "$(hostname -d)" >> "${filename}"
+
+# Prints information about the operating system name and system hardware.
+printf "OS: %s\n\n" "$(uname -a)" >> "${filename}"
+
+# Prints Linux Distro and Release
+printf "Distro and Release:\n" >> "${filename}"
+cat /etc/os-release >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Returns working directory name
+printf "Working Directory: %s\n\n" "$(pwd)" >> "${filename}"
+
+# Print Active Terminals
+printf "Active Terminals:\n" >> "${filename}"
+who -u >> "${filename}"
+printf "\n" >> "${filename}"
+
 # Print Available Shells
 printf "Available Shells:\n" >> "${filename}"
 cat /etc/shells | grep -v '#' >> "${filename}"
@@ -71,6 +91,28 @@ printf "\n" >> "${filename}"
 printf "Interfaces IP Addresses:\n" >> "${filename}"
 ip -brief address >> "${filename}"
 printf "\n" >> "${filename}"
+
+# Print environment variables
+printf "Environment Variables:\n" >> "${filename}"
+env >> "${filename}"
+printf "\n" >> "${filename}"
+
+# Print Mounted Filesystems
+printf "Mounted Filesystems:\n" >> "${filename}"
+if command -v mount &> /dev/null; then
+    mount | column -t >> "${filename}"
+else
+    printf "mount command not found.\n" >> "${filename}"
+fi
+printf "\n" >> "${filename}"
+
+# Print root content
+printf "Root Content:\n" >> "${filename}"
+ls -la / >> "${filename}"
+printf "\n" >> "${filename}"
+
+
+### Processes
 
 # Print Listening TCP Processes
 printf "Listening TCP Processes:\n" >> "${filename}"
@@ -96,6 +138,18 @@ if [ $? -ne 0 ]; then
 fi
 printf "\n" >> "${filename}"
 
+# Print Capabilities from Current Process
+printf "Current Process Capabilities:\n" >> "${filename}"
+if command -v capsh &> /dev/null; then
+    capsh --print >> "${filename}"
+else
+    printf "capsh command not found.\n" >> "${filename}"
+fi
+printf "\n" >> "${filename}"
+
+
+### NFS Shares
+
 # Print NFS Shares
 printf "NFS Shares:\n" >> "${filename}"
 if command -v showmount &> /dev/null; then
@@ -113,6 +167,9 @@ else
     printf "/etc/exports file not found.\n" >> "${filename}"
 fi
 printf "\n" >> "${filename}"
+
+
+### Containers
 
 # Print Docker Sock Permissions
 printf "Docker Sock Permissions:\n" >> "${filename}"
@@ -132,25 +189,22 @@ else
 fi
 printf "\n" >> "${filename}"
 
-# Print environment variables
-printf "Environment Variables:\n" >> "${filename}"
-env >> "${filename}"
+# Verify if is in a container
+printf "Container Check:\t" >> "${filename}"
+grep -qa 'docker\|lxc' /proc/1/cgroup && echo "Rodando em container" >> "${filename}" || echo "Não está rodando em container" >> "${filename}"
 printf "\n" >> "${filename}"
 
-# Return /etc/passwd
-printf "Users:\n" >> "${filename}"
-cat /etc/passwd >> "${filename}"
+# List LXC Containers
+printf "LXC Containers:\n" >> "${filename}"
+if command -v lxc-ls &> /dev/null; then
+    lxc-ls --fancy >> "${filename}"
+else
+    printf "lxc-ls command not found.\n" >> "${filename}"
+fi
 printf "\n" >> "${filename}"
 
-# Return /etc/group
-printf "Groups:\n" >> "${filename}"
-cat /etc/group >> "${filename}"
-printf "\n" >> "${filename}"
 
-# Return /etc/shadow
-printf "Shadow File:\n" >> "${filename}"
-cat /etc/shadow >> "${filename}"
-printf "\n" >> "${filename}"
+### Hardware
 
 # Return Block Devices
 printf "Block Devices:\n" >> "${filename}"
@@ -176,6 +230,9 @@ printf "\n" >> "${filename}"
 printf "Printers:\n" >> "${filename}"
 lpstat >> "${filename}"
 printf "\n" >> "${filename}"
+
+
+### Completion
 
 base64 -w 0 ${filename} >> "${filename}_encoded"
 

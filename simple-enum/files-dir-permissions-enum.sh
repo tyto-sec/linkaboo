@@ -44,7 +44,6 @@ find /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin /bin /sbin /snap/bin \
     -type f -exec getcap {} \; 2>/dev/null >> "${filename}"
 printf "\n" >> "${filename}"
 
-
 # Print Process Capabilities
 printf "Process Capabilities:\n" >> "${filename}"
 for pid in $(ls /proc/ | grep -E '^[0-9]+$'); do
