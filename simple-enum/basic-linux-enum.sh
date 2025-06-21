@@ -96,6 +96,42 @@ if [ $? -ne 0 ]; then
 fi
 printf "\n" >> "${filename}"
 
+# Print NFS Shares
+printf "NFS Shares:\n" >> "${filename}"
+if command -v showmount &> /dev/null; then
+    showmount -e >> "${filename}"
+else
+    printf "showmount command not found.\n" >> "${filename}"
+fi
+printf "\n" >> "${filename}"
+
+# Print /etc/exports
+printf "/etc/exports:\n" >> "${filename}"
+if [ -f /etc/exports ]; then
+    cat /etc/exports >> "${filename}"
+else
+    printf "/etc/exports file not found.\n" >> "${filename}"
+fi
+printf "\n" >> "${filename}"
+
+# Print Docker Sock Permissions
+printf "Docker Sock Permissions:\n" >> "${filename}"
+if [ -S /var/run/docker.sock ]; then
+    ls -l /var/run/docker.sock >> "${filename}"
+else
+    printf "Docker socket not found.\n" >> "${filename}"
+fi
+printf "\n" >> "${filename}"
+
+# Print Docker Containers
+printf "Docker Containers:\n" >> "${filename}"
+if command -v docker &> /dev/null; then
+    docker ps -a >> "${filename}"
+else
+    printf "Docker command not found.\n" >> "${filename}"
+fi
+printf "\n" >> "${filename}"
+
 # Print environment variables
 printf "Environment Variables:\n" >> "${filename}"
 env >> "${filename}"
