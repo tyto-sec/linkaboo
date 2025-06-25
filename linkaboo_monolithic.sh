@@ -551,10 +551,10 @@ run_module() {
 
 run_module "basic-linux-enum" basic_linux_enum &
 ((++running_jobs))
-#run_module "sensitive-files-enum" sensitive_files_enum &
-#((++running_jobs))
-#run_module "files-dir-permissions-enum" permissions_enum &
-#((++running_jobs))
+run_module "sensitive-files-enum" sensitive_files_enum &
+((++running_jobs))
+run_module "files-dir-permissions-enum" permissions_enum &
+((++running_jobs))
 run_module "scheduled-tasks-enum" scheduled_tasks_enum &
 ((++running_jobs))
 
