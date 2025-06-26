@@ -294,10 +294,6 @@ else
 fi
 printf "\n" >> "${FILENAME}"
 
-printf "Container Check:\t" >> "${FILENAME}"
-grep -qa 'docker\|lxc' /proc/1/cgroup && echo "Rodando em container" >> "${FILENAME}" || echo "Não está rodando em container" >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
-
 printf "LXC Containers:\n" >> "${FILENAME}"
 if command -v lxc-ls &> /dev/null; then
     lxc-ls --fancy >> "${FILENAME}"
@@ -340,58 +336,34 @@ WORDS_WORDLIST="$WORDS_WORDLIST"
 EXTENSIONS_WORDLIST="$EXTENSIONS_WORDLIST"
 FILENAME="$RESULTS_DIR/sensitive_files_enum_${USER}_${HOST}_${DATE}"
 
-# Files with sensitive words in their names
-printf "Files with Sensitive Words in Their Names:\n" >> "${FILENAME}"
-find / -type f \( -iname "*pass*" -o -iname "*token*" -o -iname "*secret*" -o -iname "*key*" -o -iname "*senha*" \
-    -o -iname "*user*" -o -iname "*cred*" -o -iname "*config*" -o -iname "*login*" -o -iname "*db*" -o -iname "*usuario*" \) \
-    2>/dev/null >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
+SEARCH_PATHS="/home /root /etc /var/www /opt /srv"
 
-# History files with sensitive commands
-printf "History Files with Sensitive Commands:\n" >> "${FILENAME}"
-find /home /root -type f \( -name '*_hist' -o -name '*_history' \) 2>/dev/null | while read -r file; do
-    printf "\n[+] %s\n" "$(ls -al "$file")" >> "${FILENAME}"
-    printf "History Sensitive Commands:\n" >> "${FILENAME}"
-    grep -Eif "$("$WORDS_WORDLIST")" "$file" 2>> /dev/null >> "${FILENAME}" || echo "(no match found)" >> "${FILENAME}"
-done
-printf "\n" >> "${FILENAME}"
+ALL_FILES=$(mktemp)
+find $SEARCH_PATHS -type f -readable -size -5M 2>/dev/null > "$ALL_FILES"
+
+# Files with sensitive words in names
+printf "Files with Sensitive Words in Their Names:\n" >> "$FILENAME"
+grep -iE "pass|token|secret|key|senha|user|cred|config|login|db|usuario" "$ALL_FILES" >> "$FILENAME"
+printf "\n" >> "$FILENAME"
 
 # Files with sensitive extensions
-printf "Files with Sensitive Extensions:\n" >> "${FILENAME}"
-EXPR=""
-while read -r ext; do
-    ext="${ext#.}"
-    EXPR="$EXPR -o -iname '*.$ext'"
-done < "$EXTENSIONS_WORDLIST"
-EXPR="${EXPR# -o }"
-eval "find / -type f \\( $EXPR \\) 2>/dev/null" >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
+printf "Files with Sensitive Extensions:\n" >> "$FILENAME"
+EXT_REGEX=$(sed 's/^\.//' "$EXTENSIONS_WORDLIST" | paste -sd'|' -)
+grep -iE "\.($EXT_REGEX)$" "$ALL_FILES" >> "$FILENAME"
+printf "\n" >> "$FILENAME"
 
 # Files with sensitive words in content
-printf "Files with Sensitive Words in Their Content:\n" >> "${FILENAME}"
-find / -type f -readable -size -5M 2>/dev/null | while read -r file; do
-    if grep -Eif "$WORDS_WORDLIST" "$file" 2>/dev/null; then
-        echo -e "\n[+] File: $file\n" >> "${FILENAME}"
-        grep -Eif "$WORDS_WORDLIST" "$file" 2>/dev/null >> "${FILENAME}"
+printf "Files with Sensitive Words in Their Content:\n" >> "$FILENAME"
+while read -r file; do
+    if grep -Eif "$WORDS_WORDLIST" "$file" &>/dev/null; then
+        echo -e "\n[+] File: $file\n" >> "$FILENAME"
+        grep -Eif "$WORDS_WORDLIST" "$file" 2>/dev/null >> "$FILENAME"
     fi
-done
-printf "\n" >> "${FILENAME}"
+done < "$ALL_FILES"
+printf "\n" >> "$FILENAME"
 
-# Hidden files and directories
-printf "Hidden Files and Directories:\n" >> "${FILENAME}"
-find / \( -type f -name '.*' -o -type d -name '.*' \) -exec ls -adl {} \; 2>/dev/null >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
-
-# Sensitive logs
-printf "Sensitive Logs:\n" >> "${FILENAME}"
-for file in /var/log/*; do
-    matches=$(grep -Ei "accepted|session opened|session closed|failure|failed|ssh|password changed|new user|delete user|sudo|COMMAND=|logs" "$file" 2>/dev/null)
-    if [[ -n "$matches" ]]; then
-        echo -e "\nLog file: $file" >> "${FILENAME}"
-        echo "$matches" >> "${FILENAME}"
-    fi
-done
-printf "\n" >> "${FILENAME}"
+# Cleanup
+rm -f "$ALL_FILES"
 
 }
 
@@ -400,82 +372,69 @@ permissions_enum() {
 
 FILENAME="$RESULTS_DIR/files_and_dir_permissions_enum_${USER}_${HOST}_${DATE}"
 
-# Write Permission Directories
-printf "Write Permission Directories:\n" >> "${FILENAME}"
-find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /snap -o \
-    -path /var/lib/docker -o -path /var/run -o -path /var/cache \) -prune -o \
-    -type d -perm -o+w -exec ls -dla {} \; 2>/dev/null >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
+EXCLUDED_DIRS="/proc /sys /dev /run /snap /var/lib/docker /var/run /var/cache"
 
-# Write Permission Files
-printf "Write Permission Files:\n" >> "${FILENAME}"
-find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /snap -o \
-    -path /var/lib/docker -o -path /var/run -o -path /var/cache \) -prune -o \
-    -type f -perm -o+w -exec ls -la {} \; 2>/dev/null >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
-
-# SUID Files
-printf "SUID Permission Files:\n" >> "${FILENAME}"
-find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /snap -o \
-    -path /var/lib/docker -o -path /var/cache -o -path /var/run \) -prune -o \
-    -type f -perm -4000 -exec ls -la {} \; 2>/dev/null >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
-
-# SGID Files
-printf "SGID Permission Files:\n" >> "${FILENAME}"
-find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /snap -o \
-    -path /var/lib/docker -o -path /var/cache -o -path /var/run \) -prune -o \
-    -type f -perm -2000 -exec ls -la {} \; 2>/dev/null >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
-
-# Binary Capabilities
-printf "Binary Capabilities:\n" >> "${FILENAME}"
-find /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin /bin /sbin /snap/bin \
-    "$HOME/go/bin" "$HOME/.cargo/bin" "$HOME/.local/bin" "$HOME/.npm-global/bin" \
-    -type f -exec getcap {} \; 2>/dev/null >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
-
-# Process Capabilities
-printf "Process Capabilities:\n" >> "${FILENAME}"
-for pid in $(ls /proc/ | grep -E '^[0-9]+$'); do
-    status="/proc/$pid/status"
-    exe=$(readlink -f /proc/$pid/exe 2>/dev/null)
-    caps=$(grep ^CapEff "$status" 2>/dev/null | awk '{print $2}')
-    uid=$(awk '/^Uid:/ {print $2}' "$status" 2>/dev/null)
-    username=$(getent passwd "$uid" | cut -d: -f1)
-
-    if [[ -n "$caps" && "$caps" != "0000000000000000" && "$caps" != "000001ffffffffff" && -n "$exe" ]]; then
-        echo "[+] Process PID $pid ($exe) | User: ${username:-UID $uid} | CapEff: $caps"
-    fi
-done >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
-
-# Python Path Writeable Directories
-printf "Python Path Directories with Write Permissions:\n" >> "${FILENAME}"
-python3 -c 'import sys; print("\n".join(sys.path))' 2>/dev/null | while read dir; do
-    [ -d "$dir" ] && ls -ld "$dir"
-done 2>/dev/null | grep -E 'd.........w.' >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
-
-# Root-owned Symlinks in Sensitive Paths
-printf "Symbolic Links Owned by Root in Sensitive Directories:\n" >> "${FILENAME}"
-printf "Link;Target;Owner;Sensitive\n" >> "${FILENAME}"
-find / -xtype l 2>/dev/null | while read -r link; do
-    target=$(readlink "$link")
-    owner=$(stat -c '%U' "$link" 2>/dev/null)
-    if [[ "$owner" == "root" ]]; then
-        case "$link" in
-            /etc/*|/usr/*|/var/*|/opt/*|/lib/*)
-                flag="YES"
-                ;;
-            *)
-                flag="NO"
-                ;;
-        esac
-        printf "%s;%s;%s;%s\n" "$link" "$target" "$owner" "$flag" >> "${FILENAME}"
-    fi
+PRUNE_EXPR=""
+for d in $EXCLUDED_DIRS; do
+    PRUNE_EXPR+=" -path $d -o"
 done
-printf "\n" >> "${FILENAME}"
+PRUNE_EXPR="${PRUNE_EXPR% -o}"
+
+ALL_ENTRIES=$(find / \( $PRUNE_EXPR \) -prune -o -type f -o -type d -print 2>/dev/null)
+
+{
+    printf "Write Permission Directories:\n"
+    echo "$ALL_ENTRIES" | xargs -r stat -c '%A %n' 2>/dev/null | awk '$1 ~ /^d......w../ {print $2}'
+
+    printf "\nWrite Permission Files:\n"
+    echo "$ALL_ENTRIES" | xargs -r stat -c '%A %n' 2>/dev/null | awk '$1 ~ /^-......w../ {print $2}'
+
+    printf "\nSUID Permission Files:\n"
+    echo "$ALL_ENTRIES" | xargs -r stat -c '%A %n %a' 2>/dev/null | awk '$1 ~ /^-..s/ || $3 ~ /^4/ {print $2}'
+
+    printf "\nSGID Permission Files:\n"
+    echo "$ALL_ENTRIES" | xargs -r stat -c '%A %n %a' 2>/dev/null | awk '$1 ~ /^-.....s/ || $3 ~ /^2/ {print $2}'
+
+    printf "\nBinary Capabilities:\n"
+    BIN_PATHS="/usr/bin /usr/sbin /usr/local/bin /usr/local/sbin /bin /sbin /snap/bin $HOME/go/bin $HOME/.cargo/bin $HOME/.local/bin $HOME/.npm-global/bin"
+    find $BIN_PATHS -type f -exec getcap {} \; 2>/dev/null
+
+    printf "\nProcess Capabilities:\n"
+    for pid in $(ls /proc/ | grep -E '^[0-9]+$'); do
+        status="/proc/$pid/status"
+        exe=$(readlink -f /proc/$pid/exe 2>/dev/null)
+        caps=$(grep ^CapEff "$status" 2>/dev/null | awk '{print $2}')
+        uid=$(awk '/^Uid:/ {print $2}' "$status" 2>/dev/null)
+        username=$(getent passwd "$uid" | cut -d: -f1)
+
+        if [[ -n "$caps" && "$caps" != "0000000000000000" && "$caps" != "000001ffffffffff" && -n "$exe" ]]; then
+            echo "[+] Process PID $pid ($exe) | User: ${username:-UID $uid} | CapEff: $caps"
+        fi
+    done
+
+    printf "\nPython Path Directories with Write Permissions:\n"
+    python3 -c 'import sys; print("\n".join(sys.path))' 2>/dev/null | while read dir; do
+        [ -d "$dir" ] && ls -ld "$dir"
+    done 2>/dev/null | grep -E 'd.........w.'
+
+    printf "\nSymbolic Links Owned by Root in Sensitive Directories:\n"
+    printf "Link;Target;Owner;Sensitive\n"
+    find / -xtype l 2>/dev/null | while read -r link; do
+        target=$(readlink "$link")
+        owner=$(stat -c '%U' "$link" 2>/dev/null)
+        if [[ "$owner" == "root" ]]; then
+            case "$link" in
+                /etc/*|/usr/*|/var/*|/opt/*|/lib/*)
+                    flag="YES"
+                    ;;
+                *)
+                    flag="NO"
+                    ;;
+            esac
+            printf "%s;%s;%s;%s\n" "$link" "$target" "$owner" "$flag"
+        fi
+    done
+} >> "$FILENAME"
 
 }
 

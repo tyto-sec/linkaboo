@@ -152,9 +152,6 @@ else
 fi
 printf "\n" >> "${FILENAME}"
 
-printf "Container Check:\t" >> "${FILENAME}"
-grep -qa 'docker\|lxc' /proc/1/cgroup && echo "Rodando em container" >> "${FILENAME}" || echo "Não está rodando em container" >> "${FILENAME}"
-printf "\n" >> "${FILENAME}"
 
 printf "LXC Containers:\n" >> "${FILENAME}"
 if command -v lxc-ls &> /dev/null; then
