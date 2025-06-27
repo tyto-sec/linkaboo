@@ -43,9 +43,6 @@ chmod +x main.sh scripts/*.sh
 
 > All output is saved in the `results/` folder and automatically compressed if tools like `tar`, `zip`, or `7z` are available.
 
-
-Aqui está o trecho para adicionar ao seu **README** explicando como compilar a versão monolítica com `shc` ou diretamente com `gcc`:
-
 ---
 
 ### 🛠️ Compilation as a Standalone Binary
