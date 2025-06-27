@@ -47,10 +47,10 @@ ALL_ENTRIES=$(find / \( $PRUNE_EXPR \) -prune -o -type f -o -type d -print 2>/de
         fi
     done
 
-    printf "\nPython Path Directories with Write Permissions:\n"
+    printf "\nPython Path Directories Permissions:\n"
     python3 -c 'import sys; print("\n".join(sys.path))' 2>/dev/null | while read dir; do
         [ -d "$dir" ] && ls -ld "$dir"
-    done 2>/dev/null | grep -E 'd.........w.'
+    done 2>/dev/null
 
     printf "\nSymbolic Links Owned by Root in Sensitive Directories:\n"
     printf "Link;Target;Owner;Sensitive\n"

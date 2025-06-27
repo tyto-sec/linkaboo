@@ -211,6 +211,15 @@ printf "Interfaces IP Addresses:\n" >> "${FILENAME}"
 ip -brief address >> "${FILENAME}"
 printf "\n" >> "${FILENAME}"
 
+printf "Routing Table:\n" >> "${FILENAME}"
+if command -v ip &> /dev/null; then
+    ip route show >> "${FILENAME}"
+else
+    printf "ip command not found, using route command instead.\n" >> "${FILENAME}"
+    route -n >> "${FILENAME}"
+fi
+printf "\n" >> "${FILENAME}"
+
 printf "Environment Variables:\n" >> "${FILENAME}"
 env >> "${FILENAME}"
 printf "\n" >> "${FILENAME}"
@@ -267,7 +276,7 @@ else
 fi
 printf "\n" >> "${FILENAME}"
 
-printf "/etc/exports:\n" >> "${FILENAME}"
+printf "Print /etc/exports:\n" >> "${FILENAME}"
 if [ -f /etc/exports ]; then
     cat /etc/exports >> "${FILENAME}"
 else
@@ -304,6 +313,10 @@ printf "\n" >> "${FILENAME}"
 
 
 ### Hardware
+
+printf "Disk Space:\n" >> "${FILENAME}"
+df -hT >> "${FILENAME}"
+printf "\n" >> "${FILENAME}"    
 
 printf "Block Devices:\n" >> "${FILENAME}"
 lsblk >> "${FILENAME}"
@@ -412,10 +425,10 @@ ALL_ENTRIES=$(find / \( $PRUNE_EXPR \) -prune -o -type f -o -type d -print 2>/de
         fi
     done
 
-    printf "\nPython Path Directories with Write Permissions:\n"
+    printf "\nPython Path Directories Permissions:\n"
     python3 -c 'import sys; print("\n".join(sys.path))' 2>/dev/null | while read dir; do
         [ -d "$dir" ] && ls -ld "$dir"
-    done 2>/dev/null | grep -E 'd.........w.'
+    done 2>/dev/null
 
     printf "\nSymbolic Links Owned by Root in Sensitive Directories:\n"
     printf "Link;Target;Owner;Sensitive\n"
