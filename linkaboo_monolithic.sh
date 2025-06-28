@@ -220,6 +220,14 @@ else
 fi
 printf "\n" >> "${FILENAME}"
 
+printf "ARP Table:\n" >> "${FILENAME}"
+if command -v arp &> /dev/null; then
+    arp -n >> "${FILENAME}"
+else
+    printf "arp command not found.\n" >> "${FILENAME}"
+fi
+printf "\n" >> "${FILENAME}"
+
 printf "Environment Variables:\n" >> "${FILENAME}"
 env >> "${FILENAME}"
 printf "\n" >> "${FILENAME}"
