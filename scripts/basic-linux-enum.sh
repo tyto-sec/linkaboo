@@ -3,7 +3,7 @@
 
 USER="$(whoami)"
 HOST="$(hostname)"
-DATE="$(date -I)"  # corrigido: DATE → date
+DATE="$(date -I)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FILENAME="${SCRIPT_DIR}/../results/host_enum_${USER}_${HOST}_${DATE}"  # corrigido: script_dir → SCRIPT_DIR
 
